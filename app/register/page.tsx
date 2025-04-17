@@ -33,6 +33,8 @@ export default function RegisterPage() {
       }
     } catch (err) {
       toast.error("Something went wrong");
+      console.log(err);
+      
     }
   };
 
