@@ -1,0 +1,27 @@
+{
+  "HomePage": {
+    "welcome": "به برنامه خوش آمدید",
+    "instruction": "لطفاً برای ادامه وارد شوید یا ثبت نام کنید",
+    "login": "ورود",
+    "register": "ثبت نام"
+  },
+  "LoginPage": {
+    "welcomeBack": "خوش آمدید",
+    "login": "ورود",
+    "username": "نام کاربری",
+    "password": "رمز عبور",
+    "register": "ثبت نام",
+    "backToHome": "بازگشت به خانه"
+  },
+  "RegisterPage": {
+    "joinUs": "امروز به ما بپیوندید",
+    "register": "ثبت نام",
+    "username": "نام کاربری",
+    "password": "رمز عبور",
+    "login": "ورود",
+    "backToHome": "بازگشت به خانه",
+    "successMessage": "کاربر با موفقیت ثبت شد. در حال هدایت به صفحه ورود...",
+    "errorMessage": "ثبت نام ناموفق بود",
+    "genericError": "مشکلی پیش آمده است"
+  }
+}

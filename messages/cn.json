@@ -1,0 +1,27 @@
+{
+  "HomePage": {
+    "welcome": "欢迎使用应用程序",
+    "instruction": "请登录或注册以继续",
+    "login": "登录",
+    "register": "注册"
+  },
+  "LoginPage": {
+    "welcomeBack": "欢迎回来",
+    "login": "登录",
+    "username": "用户名",
+    "password": "密码",
+    "register": "注册",
+    "backToHome": "返回主页"
+  },
+  "RegisterPage": {
+    "joinUs": "今天就加入我们吧",
+    "register": "注册",
+    "username": "用户名",
+    "password": "密码",
+    "login": "登录",
+    "backToHome": "返回主页",
+    "successMessage": "用户注册成功。正在跳转到登录页面...",
+    "errorMessage": "注册失败",
+    "genericError": "出了点问题"
+  }
+}

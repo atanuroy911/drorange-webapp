@@ -1,0 +1,29 @@
+{
+  "HomePage": {
+    "welcome": "Welcome to the App",
+    "instruction": "Please login or register to continue",
+    "login": "Login",
+    "register": "Register"
+  },
+    "LoginPage": {
+      "welcomeBack": "Welcome Back",
+      "login": "Login",
+      "username": "Username",
+      "password": "Password",
+      "register": "Register",
+      "backToHome": "Back to Home"
+    
+  },
+  "RegisterPage": {
+    "joinUs": "Join Us Today",
+    "register": "Register",
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "backToHome": "Back to Home",
+    "successMessage": "User registered. Redirecting to login...",
+    "errorMessage": "Registration failed",
+    "genericError": "Something went wrong"
+  }
+  
+}

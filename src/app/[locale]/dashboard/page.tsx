@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Download, QrCode } from "lucide-react";
+import { Download, QrCode, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
@@ -20,6 +20,7 @@ import html2canvas from "html2canvas-pro";
 import { Dialog, DialogContent } from "@/components/ui/dialog"; // Import Dialog
 import Image from "next/image";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { exportPredictionsToCSV } from "@/lib/exportCsv";
 
 type Prediction = {
   _id: string;
@@ -35,6 +36,9 @@ export default function DashboardPage() {
   // Inside the DashboardPage component:
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [predictionToDelete, setPredictionToDelete] =
+    useState<Prediction | null>(null);
 
   const router = useRouter();
 
@@ -172,7 +176,13 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-4">
           <Button variant="outline">See Analysis</Button>
-          <Button variant="outline">Download CSV</Button>
+          <Button
+            variant="outline"
+            onClick={() => exportPredictionsToCSV(predictions)}
+          >
+            Download CSV
+          </Button>
+
           <Button variant="outline">Download Report</Button>
           <Button onClick={handleLogout} variant="destructive">
             Logout
@@ -208,6 +218,16 @@ export default function DashboardPage() {
                   >
                     <QrCode className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setPredictionToDelete(prediction);
+                      setDeleteModalOpen(true);
+                    }}
+                  >
+                    <Trash className="text-red-700 h-4 w-4" />
+                  </Button>
                 </div>
               </div>
               <div id={`chart-container-${prediction._id}`}>
@@ -220,7 +240,11 @@ export default function DashboardPage() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="value" fill="rgb(59, 130, 246)" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="value"
+                      fill="rgb(59, 130, 246)"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -248,6 +272,55 @@ export default function DashboardPage() {
               className="w-48 h-48"
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="flex flex-col items-center justify-center space-y-4">
+          <DialogTitle className="text-red-600 text-lg font-bold">
+            Confirm Deletion
+          </DialogTitle>
+          <p className="text-center text-gray-600">
+            Are you sure you want to delete this prediction? <br /> This action
+            cannot be undone.
+          </p>
+          <div className="flex gap-4">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!predictionToDelete) return;
+
+                try {
+                  const res = await fetch(
+                    `/api/predictions/${predictionToDelete._id}`,
+                    {
+                      method: "DELETE",
+                    }
+                  );
+
+                  if (res.ok) {
+                    toast.success("Prediction deleted successfully");
+                    setPredictions((prev) =>
+                      prev.filter((p) => p._id !== predictionToDelete._id)
+                    );
+                  } else {
+                    toast.error("Failed to delete prediction");
+                  }
+                } catch (error) {
+                  console.error(error);
+                  toast.error("Something went wrong");
+                } finally {
+                  setDeleteModalOpen(false);
+                  setPredictionToDelete(null);
+                }
+              }}
+            >
+              Confirm Delete
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

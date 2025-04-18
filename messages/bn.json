@@ -1,0 +1,28 @@
+{
+  "HomePage": {
+    "welcome": "অ্যাপে স্বাগতম",
+    "instruction": "চালিয়ে যেতে লগইন বা নিবন্ধন করুন",
+    "login": "লগইন",
+    "register": "নিবন্ধন করুন"
+  },
+    "LoginPage": {
+    "welcomeBack": "ফিরে আসার জন্য স্বাগতম",
+    "login": "লগইন",
+    "username": "ব্যবহারকারীর নাম",
+    "password": "পাসওয়ার্ড",
+    "register": "নিবন্ধন করুন",
+    "backToHome": "হোমপেজে ফিরে যান"
+  },
+  "RegisterPage": {
+    "joinUs": "আজই আমাদের সাথে যোগ দিন",
+    "register": "নিবন্ধন করুন",
+    "username": "ব্যবহারকারীর নাম",
+    "password": "পাসওয়ার্ড",
+    "login": "লগইন",
+    "backToHome": "হোমপেজে ফিরে যান",
+    "successMessage": "ব্যবহারকারী নিবন্ধিত হয়েছে। লগইনে যাচ্ছেন...",
+    "errorMessage": "নিবন্ধন ব্যর্থ হয়েছে",
+    "genericError": "কিছু ভুল হয়েছে"
+  }
+  }
+  
