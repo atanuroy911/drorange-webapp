@@ -9,6 +9,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -17,30 +18,37 @@ import { useRouter } from "next/navigation";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas-pro";
-import { Dialog, DialogContent } from "@/components/ui/dialog"; // Import Dialog
-import Image from "next/image";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import Image from "next/image";
 import { exportPredictionsToCSV } from "@/lib/exportCsv";
+import { useLocale, useTranslations } from "next-intl"; // 👈 Import translations
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type Prediction = {
   _id: string;
   treeId: string;
   link: { [key: string]: number };
-  lastImage: string; // base64 image
+  lastImage: string;
   createdAt: string;
 };
 
 export default function DashboardPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [visibleCount, setVisibleCount] = useState(4);
-  // Inside the DashboardPage component:
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [predictionToDelete, setPredictionToDelete] =
     useState<Prediction | null>(null);
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [aggregatedData, setAggregatedData] = useState<
+    { name: string; value: number }[]
+  >([]);
 
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("DashboardPage"); // 👈 Hook to use translations
 
   useEffect(() => {
     fetchPredictions();
@@ -50,29 +58,28 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/predictions");
       const data = await res.json();
-      console.log("Fetched predictions:", data); // <<< ADD THIS
       setPredictions(data.predictions);
     } catch {
-      toast.error("Failed to load predictions");
+      toast.error(t("failed_to_load_predictions"));
     }
   };
 
   const loadMore = () => {
     setVisibleCount((prev) => prev + 4);
-    toast.success("More charts loaded");
+    toast.success(t("more_charts_loaded"));
   };
 
   const handleLogout = async () => {
     try {
       const res = await fetch("/api/logout", { method: "POST" });
       if (res.ok) {
-        toast.success("Logged out successfully");
-        router.push("/login");
+        toast.success(t("logged_out_successfully"));
+        router.push(`\/${locale}/login`);
       } else {
-        toast.error("Failed to logout");
+        toast.error(t("failed_to_logout"));
       }
     } catch {
-      toast.error("Something went wrong");
+      toast.error(t("something_went_wrong"));
     }
   };
 
@@ -81,6 +88,27 @@ export default function DashboardPage() {
     const qrCodeURL = await QRCode.toDataURL(qrData);
     setQrCodeUrl(qrCodeURL);
     setQrModalOpen(true);
+  };
+
+  const handleOpenAnalysis = () => {
+    const aggregate: { [key: string]: number } = {};
+
+    predictions.forEach((prediction) => {
+      Object.entries(prediction.link).forEach(([key, value]) => {
+        if (!aggregate[key]) {
+          aggregate[key] = 0;
+        }
+        aggregate[key] += value;
+      });
+    });
+
+    const aggregatedArray = Object.entries(aggregate)
+      .map(([key, value]) => ({ name: key, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3); // Only top 3
+
+    setAggregatedData(aggregatedArray);
+    setAnalysisModalOpen(true);
   };
 
   const generatePDF = async (prediction: Prediction) => {
@@ -94,26 +122,21 @@ export default function DashboardPage() {
       "-"
     );
 
-    // Header
-    doc.setFillColor(59, 130, 246); // blue-500
+    doc.setFillColor(59, 130, 246);
     doc.rect(0, 0, 210, 30, "F");
-
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.text("Dr. Orange - Tree Report", 35, 18);
 
-    // Info
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.text(`Tree ID: ${prediction.treeId}`, 10, 40);
     doc.text(`Date: ${dateStr}    Time: ${timeStr}`, 10, 48);
 
-    // QR Code
     const qrData = JSON.stringify(prediction.link);
     const qrCodeURL = await QRCode.toDataURL(qrData);
     doc.addImage(qrCodeURL, "PNG", 150, 35, 45, 45);
 
-    // Captured Image
     doc.setFontSize(14);
     doc.setTextColor(59, 130, 246);
     doc.text("Captured Image:", 10, 65);
@@ -122,7 +145,6 @@ export default function DashboardPage() {
     const imgData = `data:image/png;base64,${prediction.lastImage}`;
     doc.addImage(imgData, "PNG", 10, 70, 80, 60);
 
-    // Result Chart
     doc.setFontSize(14);
     doc.setTextColor(59, 130, 246);
     doc.text("Result Chart:", 10, 140);
@@ -131,28 +153,22 @@ export default function DashboardPage() {
     const chartContainer = document.getElementById(
       `chart-res-container-${prediction._id}`
     );
-    console.log("Chart container found:", chartContainer);
 
     if (!chartContainer) {
-      toast.error("Chart not found. Please reload and try again.");
+      toast.error(t("chart_not_found"));
       return;
     }
 
-    // Capture the chart
-    // Add a small delay before capturing the canvas
     setTimeout(async () => {
-      // Capture the chart after a short delay
       const chartCanvas = await html2canvas(chartContainer, {
-        backgroundColor: "#ffffff", // Force background color to white
-        useCORS: true, // Allow CORS
-        scale: 2, // Increase canvas scale for better quality
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        scale: 2,
       });
 
-      // Convert the canvas to image
       const chartDataUrl = chartCanvas.toDataURL("image/png");
       doc.addImage(chartDataUrl, "PNG", 10, 145, 180, 70);
 
-      // Raw Data
       doc.setFontSize(14);
       doc.setTextColor(59, 130, 246);
       doc.text("Raw Data:", 10, 225);
@@ -165,28 +181,37 @@ export default function DashboardPage() {
       doc.text(lines, 10, 232);
 
       doc.save(`${fileName}.pdf`);
-    }, 300); // Set delay (300ms or more depending on the chart render time)
+    }, 300);
   };
+
+  const formatLabel = (label: string) =>
+    label.length > 10 ? `${label.slice(0, 10)}...` : label;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="flex justify-between items-center px-6 py-4 shadow bg-white">
         <div className="text-xl font-bold text-blue-700">
-          🧃 Dr. Orange Dashboard
+          {t("dashboard_title")}
         </div>
         <div className="flex gap-4">
-          <Button variant="outline">See Analysis</Button>
+          <Button variant="outline" onClick={handleOpenAnalysis}>
+            {t("see_analysis")}
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => exportPredictionsToCSV(predictions)}
           >
-            Download CSV
+            {t("download_csv")}
           </Button>
-
-          <Button variant="outline">Download Report</Button>
+          <Button variant="outline">{t("download_report")}</Button>
           <Button onClick={handleLogout} variant="destructive">
-            Logout
+            {t("logout")}
           </Button>
+          {/* Language Switcher */}
+          <div className="">
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 
@@ -240,11 +265,24 @@ export default function DashboardPage() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Bar
-                      dataKey="value"
-                      fill="rgb(59, 130, 246)"
-                      radius={[4, 4, 0, 0]}
-                    />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      {chartData
+                        .sort((a, b) => b.value - a.value)
+                        .map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              index === 0
+                                ? "red"
+                                : index === 1
+                                ? "green"
+                                : index === 2
+                                ? "yellow"
+                                : "rgb(59, 130, 246)"
+                            }
+                          />
+                        ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -255,13 +293,15 @@ export default function DashboardPage() {
 
       <div className="flex justify-center py-6">
         {visibleCount < predictions.length && (
-          <Button onClick={loadMore}>Load More</Button>
+          <Button onClick={loadMore}>{t("load_more")}</Button>
         )}
       </div>
+
+      {/* QR Dialog */}
       <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
         <DialogContent className="flex flex-col items-center justify-center">
           <DialogTitle className="text-bold">
-            Download results in QR Format
+            {t("download_qr_title")}
           </DialogTitle>
           {qrCodeUrl && (
             <Image
@@ -275,18 +315,18 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent className="flex flex-col items-center justify-center space-y-4">
           <DialogTitle className="text-red-600 text-lg font-bold">
-            Confirm Deletion
+            {t("confirm_deletion_title")}
           </DialogTitle>
           <p className="text-center text-gray-600">
-            Are you sure you want to delete this prediction? <br /> This action
-            cannot be undone.
+            {t("confirm_deletion_text")}
           </p>
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -296,30 +336,93 @@ export default function DashboardPage() {
                 try {
                   const res = await fetch(
                     `/api/predictions/${predictionToDelete._id}`,
-                    {
-                      method: "DELETE",
-                    }
+                    { method: "DELETE" }
                   );
-
                   if (res.ok) {
-                    toast.success("Prediction deleted successfully");
+                    toast.success(t("prediction_deleted_successfully"));
                     setPredictions((prev) =>
                       prev.filter((p) => p._id !== predictionToDelete._id)
                     );
                   } else {
-                    toast.error("Failed to delete prediction");
+                    toast.error(t("failed_to_delete_prediction"));
                   }
                 } catch (error) {
                   console.error(error);
-                  toast.error("Something went wrong");
+                  toast.error(t("something_went_wrong"));
                 } finally {
                   setDeleteModalOpen(false);
                   setPredictionToDelete(null);
                 }
               }}
             >
-              Confirm Delete
+              {t("confirm_delete")}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={analysisModalOpen} onOpenChange={setAnalysisModalOpen}>
+        <DialogContent className="flex flex-col items-center justify-center space-y-6">
+          <DialogTitle className="text-lg font-bold text-blue-700">
+            {t("top_3_analysis")}
+          </DialogTitle>
+
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={aggregatedData}>
+                <XAxis dataKey="name" tickFormatter={formatLabel} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {aggregatedData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        index === 0
+                          ? "red"
+                          : index === 1
+                          ? "green"
+                          : index === 2
+                          ? "yellow"
+                          : "rgb(59, 130, 246)"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* LEGENDS */}
+          <div className="flex flex-col w-full px-6 space-y-2">
+            {aggregatedData.map((entry, index) => {
+              const total = aggregatedData.reduce(
+                (sum, item) => sum + item.value,
+                0
+              );
+              const percentage = ((entry.value / total) * 100).toFixed(1);
+
+              const color =
+                index === 0
+                  ? "red"
+                  : index === 1
+                  ? "green"
+                  : index === 2
+                  ? "yellow"
+                  : "gray";
+
+              return (
+                <div key={entry.name} className="flex items-center gap-4">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: color }}
+                  ></div>
+                  <div className="flex justify-between w-full text-sm">
+                    <span className="font-medium">{entry.name}</span>
+                    <span className="text-gray-500">{percentage}%</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>

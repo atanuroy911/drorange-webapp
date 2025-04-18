@@ -5,14 +5,13 @@
     "login": "Login",
     "register": "Register"
   },
-    "LoginPage": {
-      "welcomeBack": "Welcome Back",
-      "login": "Login",
-      "username": "Username",
-      "password": "Password",
-      "register": "Register",
-      "backToHome": "Back to Home"
-    
+  "LoginPage": {
+    "welcomeBack": "Welcome Back",
+    "login": "Login",
+    "username": "Username",
+    "password": "Password",
+    "register": "Register",
+    "backToHome": "Back to Home"
   },
   "RegisterPage": {
     "joinUs": "Join Us Today",
@@ -24,6 +23,27 @@
     "successMessage": "User registered. Redirecting to login...",
     "errorMessage": "Registration failed",
     "genericError": "Something went wrong"
+  },
+  "DashboardPage": {
+    "dashboard_title": "Dr. Orange Dashboard",
+    "see_analysis": "See Analysis",
+    "download_csv": "Download CSV",
+    "download_report": "Download Report",
+    "logout": "Logout",
+    "more_charts_loaded": "More charts loaded",
+    "logged_out_successfully": "Logged out successfully",
+    "failed_to_logout": "Failed to logout",
+    "something_went_wrong": "Something went wrong",
+    "failed_to_load_predictions": "Failed to load predictions",
+    "load_more": "Load More",
+    "download_qr_title": "Download results in QR Format",
+    "confirm_deletion_title": "Confirm Deletion",
+    "confirm_deletion_text": "Are you sure you want to delete this prediction? This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm_delete": "Confirm Delete",
+    "prediction_deleted_successfully": "Prediction deleted successfully",
+    "failed_to_delete_prediction": "Failed to delete prediction",
+    "chart_not_found": "Chart not found. Please reload and try again.",
+    "top_3_analysis": "Top 3 Analysis from the entire garden"
   }
-  
 }

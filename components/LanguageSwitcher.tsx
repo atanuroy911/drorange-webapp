@@ -23,7 +23,7 @@ export default function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-2">
+        <Button variant="outline" className="ml-2">
           🌐 {currentLocale.toUpperCase()}
         </Button>
       </DropdownMenuTrigger>
