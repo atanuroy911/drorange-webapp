@@ -6,5 +6,5 @@ import {routing} from './routing';
 export const {Link, redirect, usePathname, useRouter, getPathname} =
   createNavigation(routing);
 
-export const locales = ['en', 'bn', 'cn', 'fa'] as const;
+export const locales = ['cn', 'en', 'bn', 'fa'] as const;
 export type Locale = typeof locales[number];

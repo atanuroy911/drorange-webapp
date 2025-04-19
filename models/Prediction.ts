@@ -10,6 +10,14 @@ const PredictionSchema = new Schema({
     type: String,
     required: true,
   },
+  treeDesc: {
+    type: String,
+    required: true,
+  },
+  treeAuthor: {
+    type: String,
+    required: true,
+  },
   lastImage: {
     type: String,
     required: true,

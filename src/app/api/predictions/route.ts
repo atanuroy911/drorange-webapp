@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
       await dbConnect();
   
       const body = await req.json();
-      const { link, "Tree ID": treeId, lastImage } = body;
+      const { link, "Tree ID": treeId, "Tree Desc": treeDesc, "Tree Author": treeAuthor, lastImage } = body;
   
       if (!link || !treeId || !lastImage) {
         return NextResponse.json({ success: false, message: "Missing fields" }, { status: 400 });
@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
       const newPrediction = new Prediction({
         link: parsedLink,   // <-- save the parsed object
         treeId,
+        treeDesc,
+        treeAuthor,
         lastImage,
       });
   

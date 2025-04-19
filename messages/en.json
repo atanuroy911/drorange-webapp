@@ -57,6 +57,10 @@
     "prediction_deleted_successfully": "Prediction deleted successfully",
     "failed_to_delete_prediction": "Failed to delete prediction",
     "download_qr_title": "Download QR Code",
-    "load_more": "Load More"
+    "load_more": "Load More",
+    "submission_details": "Submission Details",
+    "not_available": "Not Available",
+    "submission_time": "Submission Time",
+    "reported_by": "Reported By"
   }
 }

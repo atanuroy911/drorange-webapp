@@ -57,6 +57,10 @@
     "prediction_deleted_successfully": "পূর্বাভাস সফলভাবে মুছে ফেলা হয়েছে",
     "failed_to_delete_prediction": "পূর্বাভাস মুছে ফেলতে ব্যর্থ",
     "download_qr_title": "QR কোড ডাউনলোড করুন",
-    "load_more": "আরও লোড করুন"
+    "load_more": "আরও লোড করুন",
+    "submission_details": "জমা দেওয়ার বিবরণ",
+    "not_available": "উপলব্ধ নয়",
+    "submission_time": "জমা দেওয়ার সময়",
+    "reported_by": "প্রতিবেদন করেছেন"
   }
 }

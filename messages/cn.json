@@ -57,6 +57,10 @@
     "prediction_deleted_successfully": "预测删除成功",
     "failed_to_delete_prediction": "删除预测失败",
     "download_qr_title": "下载二维码",
-    "load_more": "加载更多"
+    "load_more": "加载更多",
+    "submission_details": "提交详情",
+    "not_available": "不可用",
+    "submission_time": "提交时间",
+    "reported_by": "报告人"
   }
 }

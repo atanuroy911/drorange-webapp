@@ -57,6 +57,10 @@
     "prediction_deleted_successfully": "پیش‌بینی با موفقیت حذف شد",
     "failed_to_delete_prediction": "حذف پیش‌بینی ناموفق بود",
     "download_qr_title": "دانلود کد QR",
-    "load_more": "بارگذاری بیشتر"
+    "load_more": "بارگذاری بیشتر",
+    "submission_details": "جزئیات ارسال",
+    "not_available": "در دسترس نیست",
+    "submission_time": "زمان ارسال",
+    "reported_by": "گزارش شده توسط"
   }
 }

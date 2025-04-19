@@ -67,7 +67,7 @@ export default function RegisterPage() {
       >
         {/* Logo and Site Name */}
         <div className="mb-6 text-center">
-          <Image src="/logo4.png" alt="Dr Orange Logo" width={80} height={80} className="mx-auto" />
+          <Image src="/logo3.png" alt="Dr Orange Logo" width={80} height={80} className="mx-auto" />
           <h1 className="text-3xl font-bold text-green-500 mt-2">Dr. Orange</h1>
         </div>
 

@@ -31,6 +31,8 @@ import { ClassInfo, classInfoList } from "@/data/classInfo";
 type Prediction = {
   _id: string;
   treeId: string;
+  treeDesc: string;
+  treeAuthor: string;
   link: { [key: string]: number };
   lastImage: string;
   createdAt: string;
@@ -509,13 +511,17 @@ export default function DashboardPage() {
     const doc = new jsPDF("p", "mm", "a4");
     let yPos = 10; // Use a variable to track vertical position
 
-    // --- Header ---
+        // --- Header ---
     doc.setFillColor(255, 165, 0);
     doc.rect(0, 0, 210, 30, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
-    doc.text("Dr. Orange - Tree Report", 35, 18);
-    yPos = 40; // Update yPos after header
+    doc.text("Dr. Orange - Tree Report", 35, 18); // Main title
+    
+    // Add subheading for the author
+    doc.setFontSize(12);
+    doc.text(`Reported by: ${prediction.treeAuthor || "N/A"}`, 35, 25); // Subheading
+    yPos = 40; // Adjust yPos for the next section
 
     // --- Basic Info & QR ---
     doc.setTextColor(0, 0, 0);
@@ -524,7 +530,8 @@ export default function DashboardPage() {
     const dateObj = new Date(prediction.createdAt);
     const dateStr = dateObj.toLocaleDateString();
     const timeStr = dateObj.toLocaleTimeString();
-    doc.text(`Date: ${dateStr}`, 10, yPos + 8);
+    doc.text(`Tree Description: ${prediction.treeDesc}`, 10, yPos + 6);
+    doc.text(`Date: ${dateStr}`, 10, yPos + 12);
     doc.text(`Time: ${timeStr}`, 10, yPos + 18);
 
     try {
@@ -715,11 +722,6 @@ export default function DashboardPage() {
     doc.line(10, yPos + 2, 200, yPos + 2);
     yPos += 8;
 
-    doc.setFontSize(8);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Verified by: jalil08, ajm44, roy01", 10, yPos);
-    yPos += 8;
-
     doc.setFontSize(9); // Smaller font for raw data
     doc.setTextColor(0, 0, 0);
     try {
@@ -821,7 +823,14 @@ export default function DashboardPage() {
           return (
             <Card key={prediction._id} className="p-4 shadow rounded-2xl">
               <div className="flex justify-between mb-2">
-                <h3 className="font-semibold">{prediction.treeId}</h3>
+                <div className="flex flex-col">
+                  <h3 className="font-semibold">
+                    Tree ID: {prediction.treeId}
+                  </h3>
+                  <p className="text-gray-700">
+                      Submission Time: {new Date(prediction?.createdAt).toLocaleString()}
+                    </p>
+                </div>
                 <div className="flex gap-2">
                   {/* Eye Button - New addition */}
                   <Button
@@ -923,7 +932,7 @@ export default function DashboardPage() {
             <div className="flex flex-col items-center space-y-4">
               {/* Display the Last Image */}
               {selectedPrediction?.lastImage && (
-                <div className="w-full">
+                <div className="w-full bg-gray-50 p-4 rounded-lg shadow-md">
                   <h4 className="font-semibold text-center py-2">
                     {t("last_image_title")}
                   </h4>
@@ -939,7 +948,7 @@ export default function DashboardPage() {
 
               {/* Display the Pie Chart */}
               {selectedPrediction && (
-                <div className="w-full">
+                <div className="w-full bg-gray-50 p-4 rounded-lg shadow-md">
                   <h4 className="font-semibold mb-2 text-center">
                     {t("pie_chart_title")}
                   </h4>
@@ -1011,42 +1020,82 @@ export default function DashboardPage() {
             </div>
             {/* Right Column: Top Prediction Details */}
             <div className="flex flex-col space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
+                  {t("submission_details")}
+                </h3>
+                <div className="space-y-2">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600">
+                      {t("description")}:
+                    </h4>
+                    <p className="text-gray-700">
+                      {selectedPrediction?.treeDesc || t("not_available")}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600">
+                      {t("submission_time")}:
+                    </h4>
+                    <p className="text-gray-700">
+                      {new Date(selectedPrediction?.createdAt).toLocaleString()}
+                    </p>
+                    
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600">
+                      {t("reported_by")}:
+                    </h4>
+                    <p className="text-gray-700">
+                      {selectedPrediction?.treeAuthor || t("not_available")}
+                    </p>
+                  </div>
+                </div>
+              </div>
               {topPredictionInfo ? (
                 <>
-                  <h3 className="text-lg font-semibold border-b pb-2">
-                    {t("top_prediction_details")}
-                  </h3>
-                  <div>
-                    <h4 className="font-medium text-md">{t("class_name")}:</h4>
-                    <p className="text-gray-700">
-                      {topPredictionInfo.className}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-md">{t("type")}:</h4>
-                    <p className="text-gray-700">{topPredictionInfo.type}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-md">{t("description")}:</h4>
-                    <p className="text-gray-700">
-                      {topPredictionInfo.description}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-md">
-                      {t("potential_damage")}:
-                    </h4>
-                    <p className="text-gray-700">{topPredictionInfo.damage}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-md">
-                      {t("suggested_solutions")}:
-                    </h4>
-                    <ul className="list-disc list-inside space-y-1 text-gray-700">
-                      {topPredictionInfo.solutions.map((solution, index) => (
-                        <li key={index}>{solution}</li>
-                      ))}
-                    </ul>
+                  <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <h3 className="text-lg font-semibold border-b pb-2">
+                      {t("top_prediction_details")}
+                    </h3>
+                    <div>
+                      <h4 className="font-medium text-md">
+                        {t("class_name")}:
+                      </h4>
+                      <p className="text-gray-700">
+                        {topPredictionInfo.className}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-md">{t("type")}:</h4>
+                      <p className="text-gray-700">{topPredictionInfo.type}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-md">
+                        {t("description")}:
+                      </h4>
+                      <p className="text-gray-700">
+                        {topPredictionInfo.description}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-md">
+                        {t("potential_damage")}:
+                      </h4>
+                      <p className="text-gray-700">
+                        {topPredictionInfo.damage}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-md">
+                        {t("suggested_solutions")}:
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1 text-gray-700">
+                        {topPredictionInfo.solutions.map((solution, index) => (
+                          <li key={index}>{solution}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </>
               ) : (

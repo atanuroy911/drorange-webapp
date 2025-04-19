@@ -78,7 +78,7 @@ export default function LoginPage() {
         {/* Logo and Site Name */}
         <div className="flex flex-col items-center mb-6">
           <Image
-            src="/logo4.png"
+            src="/logo3.png"
             alt="Dr Orange Logo"
             width={80}
             height={80}

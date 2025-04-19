@@ -65,7 +65,7 @@ export default function HomePage() {
         </div>
 
         {/* Language switcher buttons */}
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <button
             onClick={() => changeLanguage("en")}
             className="px-4 py-2 bg-gray-800 text-white rounded-lg shadow hover:bg-gray-700 transition"
@@ -90,7 +90,7 @@ export default function HomePage() {
           >
             فارسی
           </button>
-        </div>
+        </div> */}
       </div>
     </main>
   );
