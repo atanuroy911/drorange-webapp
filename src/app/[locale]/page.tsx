@@ -3,26 +3,26 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const t = useTranslations("HomePage");
   const locale = useLocale();
-  const router = useRouter();
+  // const router = useRouter();
   const isRTL = locale === "fa";
 
-  const changeLanguage = (newLocale: string) => {
-    const currentPath = window.location.pathname;
+  // const changeLanguage = (newLocale: string) => {
+  //   const currentPath = window.location.pathname;
 
-    // If we're at the root path, just change the locale to the new locale
-    if (currentPath === "/") {
-      router.push(`/${newLocale}`);
-    } else {
-      // If we're not at the root path, we preserve the current path but switch the locale
-      const basePath = currentPath.split("/").slice(2).join("/"); // Remove the current locale from path
-      router.push(`/${newLocale}/${basePath}`);
-    }
-  };
+  //   // If we're at the root path, just change the locale to the new locale
+  //   if (currentPath === "/") {
+  //     router.push(`/${newLocale}`);
+  //   } else {
+  //     // If we're not at the root path, we preserve the current path but switch the locale
+  //     const basePath = currentPath.split("/").slice(2).join("/"); // Remove the current locale from path
+  //     router.push(`/${newLocale}/${basePath}`);
+  //   }
+  // };
 
   return (
     <main

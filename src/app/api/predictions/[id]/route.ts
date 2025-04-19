@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db"; // or wherever your db connect function is
 import Prediction from "@/models/Prediction"; // assuming you have this
 
-export async function DELETE(req: Request, context: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await dbConnect;
+    await dbConnect();
 
-    const { id } = context.params; // <- use context.params, not just params
+    const id = (await params).id // <- use context.params, not just params
 
     const deleted = await Prediction.findByIdAndDelete(id);
 

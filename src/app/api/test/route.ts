@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     console.log("📥 Incoming POST JSON data:", data);
 
     return NextResponse.json({ success: true, received: data });
-  } catch (jsonError) {
+  } catch {
     console.warn("⚠️ Not JSON, trying alternative parsing...");
 
     const contentType = req.headers.get("content-type") || "";

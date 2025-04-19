@@ -90,6 +90,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Dependency array is empty, runs once on mount
 
   const router = useRouter();
@@ -98,6 +99,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchPredictions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPredictions = async () => {
@@ -633,7 +635,7 @@ export default function DashboardPage() {
     }
 
     // --- Top Prediction Details --- (NEW SECTION)
-    const { topClassName, classInfo } = getTopPredictionDetails(
+    const { classInfo } = getTopPredictionDetails(
       prediction.link
     ); // Use helper
 
@@ -688,7 +690,7 @@ export default function DashboardPage() {
       doc.setFont("Times New Roman", "normal");
       yPos += 6; // Add space before solutions
       if (classInfo.solutions && classInfo.solutions.length > 0) {
-        classInfo.solutions.forEach((solution, index) => {
+        classInfo.solutions.forEach((solution) => {
           // Check for page break before adding solution
           if (yPos > 280) {
             doc.addPage();
@@ -1038,7 +1040,7 @@ export default function DashboardPage() {
                       {t("submission_time")}:
                     </h4>
                     <p className="text-gray-700">
-                      {new Date(selectedPrediction?.createdAt).toLocaleString()}
+                      {selectedPrediction?.createdAt ? new Date(selectedPrediction.createdAt).toLocaleString() : "N/A"}
                     </p>
                     
                   </div>

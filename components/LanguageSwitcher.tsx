@@ -16,7 +16,7 @@ export default function LanguageSwitcher() {
 
   function changeLanguage(locale: string) {
     startTransition(() => {
-      router.replace({ pathname, params }, { locale });
+      router.replace({ pathname, query: { ...params } }, { locale });
     });
   }
 

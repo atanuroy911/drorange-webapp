@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       let parsedLink;
       try {
         parsedLink = typeof link === "string" ? JSON.parse(link) : link;
-      } catch (error) {
+      } catch {
         return NextResponse.json({ success: false, message: "Invalid link format" }, { status: 400 });
       }
   

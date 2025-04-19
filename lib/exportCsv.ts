@@ -1,5 +1,6 @@
 import { saveAs } from "file-saver";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const exportPredictionsToCSV = (predictions: any[]) => {
   if (predictions.length === 0) {
     return;
