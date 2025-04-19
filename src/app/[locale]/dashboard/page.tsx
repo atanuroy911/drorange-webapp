@@ -56,6 +56,40 @@ export default function DashboardPage() {
     null
   );
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/predictions");
+        const data = await res.json();
+        setPredictions(data.predictions);
+
+        // Calculate and set aggregated data immediately after fetching all predictions
+        const aggregate: { [key: string]: number } = {};
+        data.predictions.forEach((prediction: Prediction) => {
+          // Use the fetched data
+          if (prediction.link && typeof prediction.link === "object") {
+            Object.entries(prediction.link).forEach(([key, value]) => {
+              const numericValue = Number(value);
+              if (!isNaN(numericValue)) {
+                aggregate[key] = (aggregate[key] || 0) + numericValue;
+              }
+            });
+          }
+        });
+
+        const aggregatedArray = Object.entries(aggregate)
+          .map(([key, value]) => ({ name: key, value }))
+          .sort((a, b) => b.value - a.value);
+
+        setAggregatedData(aggregatedArray); // Update aggregatedData state
+      } catch {
+        toast.error(t("failed_to_load_predictions"));
+      }
+    };
+
+    fetchData();
+  }, []); // Dependency array is empty, runs once on mount
+
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("DashboardPage");
@@ -215,8 +249,13 @@ export default function DashboardPage() {
 
   // Add this function within your DashboardPage component
   const generateAggregatePDF = async () => {
-    if (!predictions || predictions.length === 0) {
-      toast.info(t("no_predictions_to_analyze")); // Reuse the translation key
+    if (
+      !predictions ||
+      predictions.length === 0 ||
+      !aggregatedData ||
+      aggregatedData.length === 0
+    ) {
+      toast.info(t("no_data_to_generate_report")); // Add a new translation key
       return;
     }
 
@@ -228,29 +267,13 @@ export default function DashboardPage() {
     doc.rect(0, 0, 210, 30, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
-    doc.text("Dr. Orange - Garden Aggregate Report", 35, 18); // Updated title
-    yPos = 40; // Update yPos after header
+    doc.text("Dr. Orange - Garden Aggregate Report", 35, 18);
+    yPos = 40;
 
-    // --- Aggregate Data Calculation ---
-    const aggregate: { [key: string]: number } = {};
-    predictions.forEach((prediction) => {
-      if (prediction.link && typeof prediction.link === "object") {
-        Object.entries(prediction.link).forEach(([key, value]) => {
-          const numericValue = Number(value);
-          if (!isNaN(numericValue)) {
-            aggregate[key] = (aggregate[key] || 0) + numericValue;
-          }
-        });
-      }
-    });
-
-    const aggregatedArray = Object.entries(aggregate)
-      .map(([key, value]) => ({ name: key, value }))
-      .sort((a, b) => b.value - a.value);
-
-    const overallHighest =
-      aggregatedArray.length > 0 ? aggregatedArray[0] : null;
-    const top3Defects = aggregatedArray.slice(0, 3);
+    // --- Get Pre-calculated Aggregate Data ---
+    // Use the state directly, which is updated in the useEffect
+    const overallHighest = aggregatedData.length > 0 ? aggregatedData[0] : null;
+    const top3Defects = aggregatedData.slice(0, 3);
 
     let highestPredictedClassInfo: ClassInfo | null = null;
     if (overallHighest) {
@@ -260,7 +283,7 @@ export default function DashboardPage() {
     // --- Add Chart to PDF ---
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
-    doc.text("Overall Garden Analysis - Prediction Distribution:", 10, yPos); // Chart title
+    doc.text("Overall Garden Analysis - Prediction Distribution:", 10, yPos);
     doc.line(10, yPos + 2, 200, yPos + 2);
     yPos += 8;
 
@@ -270,21 +293,21 @@ export default function DashboardPage() {
 
     if (chartContainer) {
       try {
-        // Wait for chart to potentially render if data just updated
-        // Although with the hidden div approach, it should be rendered
-        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay to ensure rendering
+        // Small delay to ensure the chart is rendered with the updated aggregatedData
+        // This might still be necessary depending on browser rendering speeds
+        await new Promise((resolve) => setTimeout(resolve, 200)); // Increased delay slightly
 
         const chartCanvas = await html2canvas(chartContainer, {
           backgroundColor: "#ffffff",
           useCORS: true,
-          scale: 2, // Increase scale for better resolution
+          scale: 2,
         });
         const chartDataUrl = chartCanvas.toDataURL("image/png", 1.0);
 
         const chartAspectRatio = chartCanvas.width / chartCanvas.height;
-        let chartImgWidth = 150; // Adjust width as needed for the PDF layout
+        let chartImgWidth = 150;
         let chartImgHeight = chartImgWidth / chartAspectRatio;
-        const maxChartHeight = 80; // Max height
+        const maxChartHeight = 80;
 
         if (chartImgHeight > maxChartHeight) {
           chartImgHeight = maxChartHeight;
@@ -298,28 +321,27 @@ export default function DashboardPage() {
           yPos,
           chartImgWidth,
           chartImgHeight
-        ); // Adjust position (30, yPos)
-        yPos += chartImgHeight + 10; // Move yPos below the chart and add some space
+        );
+        yPos += chartImgHeight + 10;
       } catch (canvasError) {
         console.error(
           "Failed to render aggregate chart to canvas for PDF:",
           canvasError
         );
-        toast.error("Failed to render aggregate chart for PDF."); // Add translation key
+        toast.error(t("failed_to_render_aggregate_chart")); // Add translation key
         doc.setTextColor(255, 0, 0);
         doc.text("Aggregate chart rendering error.", 10, yPos + 10);
         doc.setTextColor(0, 0, 0);
-        yPos += 20; // Adjust yPos even if chart rendering fails
+        yPos += 20;
       }
     } else {
       doc.setTextColor(255, 0, 0);
       doc.text("Aggregate chart container not found.", 10, yPos + 10);
       doc.setTextColor(0, 0, 0);
-      yPos += 20; // Adjust yPos
+      yPos += 20;
     }
 
-    // --- Report Content (Details for Highest Predicted Class and Top 3) ---
-    // Add a check here if yPos is too close to the bottom before starting the next sections
+    // --- Report Content (Summary and Details) ---
     if (yPos > 240) {
       doc.addPage();
       yPos = 15;
@@ -327,12 +349,12 @@ export default function DashboardPage() {
     }
 
     doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Summary and Details:", 10, yPos); // New section title
+    doc.setTextColor(59, 130, 246);
+    doc.text("Summary and Details:", 10, yPos);
     doc.line(10, yPos + 2, 200, yPos + 2);
     yPos += 8;
 
-    // Highest Predicted Class (Keep this part, adjust yPos usage)
+    // Highest Predicted Class (Use aggregatedData state)
     doc.setFontSize(12);
     doc.setFont("Times New Roman", "bold");
     doc.text("Highest Predicted Class:", 10, yPos);
@@ -350,21 +372,21 @@ export default function DashboardPage() {
     }
     yPos += 8;
 
-    // Details for Highest Predicted Class (Keep this part, adjust yPos usage and page breaks)
+    // Details for Highest Predicted Class (Use highestPredictedClassInfo)
     if (highestPredictedClassInfo) {
       doc.setFont("Times New Roman", "bold");
       doc.text("Details:", 10, yPos);
       doc.setFont("Times New Roman", "normal");
       yPos += 6;
 
-      doc.setFontSize(10); // Smaller font for details
+      doc.setFontSize(10);
       const addDetail = (label: string, text: string) => {
         if (yPos > 280) {
           doc.addPage();
           yPos = 15;
           doc.setTextColor(0, 0, 0);
           doc.setFontSize(10);
-        } // Page break check
+        }
         doc.setFont("Times New Roman", "bold");
         doc.text(`${label}:`, 15, yPos);
         doc.setFont("Times New Roman", "normal");
@@ -382,7 +404,7 @@ export default function DashboardPage() {
         yPos = 15;
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(10);
-      } // Page break before solutions
+      }
       doc.setFont("Times New Roman", "bold");
       doc.text("Suggested Solutions:", 15, yPos);
       doc.setFont("Times New Roman", "normal");
@@ -402,7 +424,7 @@ export default function DashboardPage() {
             doc.text("Suggested Solutions (cont.):", 15, yPos);
             doc.setFont("Times New Roman", "normal");
             yPos += 6;
-          } // Page break check for solutions
+          }
           const lines = doc.splitTextToSize(`- ${solution}`, 160);
           doc.text(lines, 20, yPos);
           yPos += lines.length * 4 + 1;
@@ -411,7 +433,7 @@ export default function DashboardPage() {
         doc.text("- N/A", 20, yPos);
         yPos += 6;
       }
-      yPos += 5; // Add space after details/solutions
+      yPos += 5;
     } else {
       doc.setFontSize(10);
       doc.text(
@@ -422,14 +444,14 @@ export default function DashboardPage() {
       yPos += 10;
     }
 
-    // Top 3 Detected Defects (Keep this part, adjust yPos usage and page breaks)
+    // Top 3 Detected Defects (Use aggregatedData state)
     if (yPos > 250) {
       doc.addPage();
       yPos = 15;
       doc.setTextColor(0, 0, 0);
-    } // Page break check before Top 3
+    }
     doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(59, 130, 246);
     doc.text("Top 3 Detected Defects:", 10, yPos);
     doc.line(10, yPos + 2, 200, yPos + 2);
     yPos += 8;
@@ -443,7 +465,7 @@ export default function DashboardPage() {
           yPos = 15;
           doc.setTextColor(0, 0, 0);
           doc.setFontSize(12);
-        } // Page break check for each defect
+        }
         doc.text(
           `${index + 1}. ${
             defect.name
@@ -457,9 +479,9 @@ export default function DashboardPage() {
       doc.text("No defects detected.", 15, yPos);
       yPos += 7;
     }
-    yPos += 5; // Add space after top 3
+    yPos += 5;
 
-    // --- Footer --- (Keep this part, adjust yPos if needed)
+    // --- Footer ---
     if (yPos > 270) {
       doc.addPage();
       yPos = 15;
@@ -480,7 +502,7 @@ export default function DashboardPage() {
       .replace(/-/g, "_")}.pdf`;
 
     doc.save(fileName);
-    toast.success(t("pdf_generated_successfully")); // Reuse translation key
+    toast.success(t("pdf_generated_successfully"));
   };
 
   const generatePDF = async (prediction: Prediction) => {
@@ -890,7 +912,6 @@ export default function DashboardPage() {
         }}
       >
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-          
           {/* Increased width and scroll */}
           <DialogTitle className="text-center text-xl font-semibold mb-4">
             {t("chart_details_title")} for Tree ID: {selectedPrediction?.treeId}
