@@ -61,6 +61,9 @@
     "submission_details": "جزئیات ارسال",
     "not_available": "در دسترس نیست",
     "submission_time": "زمان ارسال",
-    "reported_by": "گزارش شده توسط"
+    "reported_by": "گزارش شده توسط",
+    "tree_id": "درخت ID",
+    "no_solutions_available": "هیچ راه حلی در دسترس نیست."
+
   }
 }

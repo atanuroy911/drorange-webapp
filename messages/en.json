@@ -61,6 +61,8 @@
     "submission_details": "Submission Details",
     "not_available": "Not Available",
     "submission_time": "Submission Time",
-    "reported_by": "Reported By"
+    "reported_by": "Reported By",
+    "tree_id": "Tree ID",
+    "no_solutions_available": "No Solutions Available"
   }
 }

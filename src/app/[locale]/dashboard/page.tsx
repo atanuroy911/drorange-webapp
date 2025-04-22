@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import useSWR from "swr";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Download, Eye, QrCode, Trash } from "lucide-react";
@@ -26,7 +27,10 @@ import Image from "next/image";
 import { exportPredictionsToCSV } from "@/lib/exportCsv";
 import { useLocale, useTranslations } from "next-intl";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { ClassInfo, classInfoList } from "@/data/classInfo";
+import { ClassInfo } from "@/data/classInfo.en";
+import { font } from "@/fonts/notosansfont"; // Adjust the path
+import { bengali_font } from "@/fonts/notosansbengali";
+import { arabic_font } from "@/fonts/notosansarabic";
 
 type Prediction = {
   _id: string;
@@ -37,6 +41,8 @@ type Prediction = {
   lastImage: string;
   createdAt: string;
 };
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DashboardPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -58,59 +64,81 @@ export default function DashboardPage() {
     null
   );
 
+  const [classInfoList, setClassInfoList] = useState<ClassInfo[]>([]);
+
+  const locale = useLocale();
+
+  // const getClassInfoList = async () => {
+  //   try {
+  //     const classInfoModule = await import(`@/data/classInfo.${locale}`);
+  //     setClassInfoList(classInfoModule.classInfoList); // Store in state
+  //   } catch (error) {
+  //     console.error(`Failed to load class info for locale: ${locale}`, error);
+  //     setClassInfoList([]); // Fallback to empty list
+  //   }
+  // };
+
+  const { data } = useSWR("/api/predictions", fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
+  });
+
   useEffect(() => {
-    const fetchData = async () => {
+    const loadClassInfo = async () => {
       try {
-        const res = await fetch("/api/predictions");
-        const data = await res.json();
-        setPredictions(data.predictions);
-
-        // Calculate and set aggregated data immediately after fetching all predictions
-        const aggregate: { [key: string]: number } = {};
-        data.predictions.forEach((prediction: Prediction) => {
-          // Use the fetched data
-          if (prediction.link && typeof prediction.link === "object") {
-            Object.entries(prediction.link).forEach(([key, value]) => {
-              const numericValue = Number(value);
-              if (!isNaN(numericValue)) {
-                aggregate[key] = (aggregate[key] || 0) + numericValue;
-              }
-            });
-          }
-        });
-
-        const aggregatedArray = Object.entries(aggregate)
-          .map(([key, value]) => ({ name: key, value }))
-          .sort((a, b) => b.value - a.value);
-
-        setAggregatedData(aggregatedArray); // Update aggregatedData state
-      } catch {
-        toast.error(t("failed_to_load_predictions"));
+        const classInfoModule = await import(`@/data/classInfo.${locale}`);
+        setClassInfoList(classInfoModule.classInfoList); // Store in state
+      } catch (error) {
+        console.error(`Failed to load class info for locale: ${locale}`, error);
+        setClassInfoList([]); // Fallback to empty list
       }
     };
 
-    fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Dependency array is empty, runs once on mount
-
-  const router = useRouter();
-  const locale = useLocale();
-  const t = useTranslations("DashboardPage");
+    loadClassInfo();
+  }, [locale]);
 
   useEffect(() => {
-    fetchPredictions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (data?.predictions) {
+      setPredictions(data.predictions); // Update the predictions state
+      const aggregate: { [key: string]: number } = {};
 
-  const fetchPredictions = async () => {
-    try {
-      const res = await fetch("/api/predictions");
-      const data = await res.json();
-      setPredictions(data.predictions);
-    } catch {
-      toast.error(t("failed_to_load_predictions"));
+      data.predictions.forEach((prediction: Prediction) => {
+        if (prediction.link && typeof prediction.link === "object") {
+          Object.entries(prediction.link).forEach(([key, value]) => {
+            const numericValue = Number(value);
+            if (!isNaN(numericValue)) {
+              aggregate[key] = (aggregate[key] || 0) + numericValue;
+            }
+          });
+        }
+      });
+
+      const aggregatedArray = Object.entries(aggregate)
+        .map(([key, value]) => ({ name: key, value }))
+        .sort((a, b) => b.value - a.value);
+
+      setAggregatedData(aggregatedArray);
     }
-  };
+  }, [data]);
+
+  const router = useRouter();
+  const t = useTranslations("DashboardPage");
+
+  // useEffect(() => {
+  //   fetchPredictions();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
+
+  // const fetchPredictions = async () => {
+  //   try {
+  //     const res = await fetch("/api/predictions");
+  //     const data = await res.json();
+  //     setPredictions(data.predictions);
+  //   } catch {
+  //     toast.error(t("failed_to_load_predictions"));
+  //   }
+  // };
 
   const loadMore = () => {
     setVisibleCount((prev) => prev + 4);
@@ -264,6 +292,20 @@ export default function DashboardPage() {
     }
 
     const doc = new jsPDF("p", "mm", "a4");
+    if (locale === "bn") {
+      doc.addFileToVFS("notosansbn-normal.ttf.ttf", bengali_font);
+      doc.addFont("notosansbn-normal.ttf.ttf", "notosansbn", "normal");
+      doc.setFont("notosansbn");
+    } else if (locale == "fa") {
+      doc.addFileToVFS("notosansfa-normal.ttf.ttf", arabic_font);
+      doc.addFont("notosansfa-normal.ttf.ttf", "notosansfa", "normal");
+      doc.setFont("notosansfa");
+    } else {
+      doc.addFileToVFS("notosans-normal.ttf", font);
+      doc.addFont("notosans-normal.ttf", "notosans", "normal");
+      doc.setFont("notosans");
+    }
+
     let yPos = 10;
 
     // --- Header ---
@@ -360,9 +402,9 @@ export default function DashboardPage() {
 
     // Highest Predicted Class (Use aggregatedData state)
     doc.setFontSize(12);
-    doc.setFont("Times New Roman", "bold");
+
     doc.text("Highest Predicted Class:", 10, yPos);
-    doc.setFont("Times New Roman", "normal");
+
     if (overallHighest) {
       doc.text(
         `${
@@ -378,9 +420,8 @@ export default function DashboardPage() {
 
     // Details for Highest Predicted Class (Use highestPredictedClassInfo)
     if (highestPredictedClassInfo) {
-      doc.setFont("Times New Roman", "bold");
       doc.text("Details:", 10, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       yPos += 6;
 
       doc.setFontSize(10);
@@ -391,9 +432,9 @@ export default function DashboardPage() {
           doc.setTextColor(0, 0, 0);
           doc.setFontSize(10);
         }
-        doc.setFont("Times New Roman", "bold");
+
         doc.text(`${label}:`, 15, yPos);
-        doc.setFont("Times New Roman", "normal");
+
         const lines = doc.splitTextToSize(text || "N/A", 160);
         doc.text(lines, 45, yPos);
         yPos += lines.length * 4 + 2;
@@ -409,9 +450,9 @@ export default function DashboardPage() {
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(10);
       }
-      doc.setFont("Times New Roman", "bold");
+
       doc.text("Suggested Solutions:", 15, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       yPos += 6;
 
       if (
@@ -424,9 +465,9 @@ export default function DashboardPage() {
             yPos = 15;
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(10);
-            doc.setFont("Times New Roman", "bold");
+
             doc.text("Suggested Solutions (cont.):", 15, yPos);
-            doc.setFont("Times New Roman", "normal");
+
             yPos += 6;
           }
           const lines = doc.splitTextToSize(`- ${solution}`, 160);
@@ -511,15 +552,30 @@ export default function DashboardPage() {
 
   const generatePDF = async (prediction: Prediction) => {
     const doc = new jsPDF("p", "mm", "a4");
+
+    if (locale === "bn") {
+      doc.addFileToVFS("notosansbn-normal.ttf.ttf", bengali_font);
+      doc.addFont("notosansbn-normal.ttf.ttf", "notosansbn", "normal");
+      doc.setFont("notosansbn");
+    } else if (locale == "fa") {
+      doc.addFileToVFS("notosansfa-normal.ttf.ttf", arabic_font);
+      doc.addFont("notosansfa-normal.ttf.ttf", "notosansfa", "normal");
+      doc.setFont("notosansfa");
+    } else {
+      doc.addFileToVFS("notosans-normal.ttf", font);
+      doc.addFont("notosans-normal.ttf", "notosans", "normal");
+      doc.setFont("notosans");
+    }
+
     let yPos = 10; // Use a variable to track vertical position
 
-        // --- Header ---
+    // --- Header ---
     doc.setFillColor(255, 165, 0);
     doc.rect(0, 0, 210, 30, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.text("Dr. Orange - Tree Report", 35, 18); // Main title
-    
+
     // Add subheading for the author
     doc.setFontSize(12);
     doc.text(`Reported by: ${prediction.treeAuthor || "N/A"}`, 35, 25); // Subheading
@@ -528,7 +584,7 @@ export default function DashboardPage() {
     // --- Basic Info & QR ---
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
-    doc.text(`Tree ID: ${prediction.treeId}`, 10, yPos);
+    doc.text(`${t("tree_id")} ${prediction.treeId}`, 10, yPos);
     const dateObj = new Date(prediction.createdAt);
     const dateStr = dateObj.toLocaleDateString();
     const timeStr = dateObj.toLocaleTimeString();
@@ -635,9 +691,7 @@ export default function DashboardPage() {
     }
 
     // --- Top Prediction Details --- (NEW SECTION)
-    const { classInfo } = getTopPredictionDetails(
-      prediction.link
-    ); // Use helper
+    const { classInfo } = getTopPredictionDetails(prediction.link); // Use helper
 
     // Check if adding this section exceeds page height (approx 297mm)
     if (yPos > 260) {
@@ -656,21 +710,18 @@ export default function DashboardPage() {
     doc.setTextColor(0, 0, 0);
 
     if (classInfo) {
-      doc.setFont("Times New Roman", "bold");
       doc.text("Class:", 10, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       doc.text(classInfo.className || "N/A", 35, yPos);
       yPos += 6;
 
-      doc.setFont("Times New Roman", "bold");
       doc.text("Type:", 10, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       doc.text(classInfo.type || "N/A", 35, yPos);
       yPos += 6;
 
-      doc.setFont("Times New Roman", "bold");
       doc.text("Description:", 10, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       const descLines = doc.splitTextToSize(
         classInfo.description || "N/A",
         160
@@ -678,16 +729,14 @@ export default function DashboardPage() {
       doc.text(descLines, 35, yPos);
       yPos += descLines.length * 4 + 2; // Adjust spacing based on lines
 
-      doc.setFont("Times New Roman", "bold");
       doc.text("Damage:", 10, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       const damageLines = doc.splitTextToSize(classInfo.damage || "N/A", 160);
       doc.text(damageLines, 35, yPos);
       yPos += damageLines.length * 4 + 2;
 
-      doc.setFont("Times New Roman", "bold");
       doc.text("Solutions:", 10, yPos);
-      doc.setFont("Times New Roman", "normal");
+
       yPos += 6; // Add space before solutions
       if (classInfo.solutions && classInfo.solutions.length > 0) {
         classInfo.solutions.forEach((solution) => {
@@ -827,11 +876,12 @@ export default function DashboardPage() {
               <div className="flex justify-between mb-2">
                 <div className="flex flex-col">
                   <h3 className="font-semibold">
-                    Tree ID: {prediction.treeId}
+                    {t("tree_id")} : {prediction.treeId}
                   </h3>
                   <p className="text-gray-700">
-                      Submission Time: {new Date(prediction?.createdAt).toLocaleString()}
-                    </p>
+                    {t("submission_time")} :{" "}
+                    {new Date(prediction?.createdAt).toLocaleString()}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   {/* Eye Button - New addition */}
@@ -925,7 +975,8 @@ export default function DashboardPage() {
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
           {/* Increased width and scroll */}
           <DialogTitle className="text-center text-xl font-semibold mb-4">
-            {t("chart_details_title")} for Tree ID: {selectedPrediction?.treeId}
+            {t("chart_details_title")} for {t("tree_id")}:{" "}
+            {selectedPrediction?.treeId}
           </DialogTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {" "}
@@ -1040,9 +1091,12 @@ export default function DashboardPage() {
                       {t("submission_time")}:
                     </h4>
                     <p className="text-gray-700">
-                      {selectedPrediction?.createdAt ? new Date(selectedPrediction.createdAt).toLocaleString() : "N/A"}
+                      {selectedPrediction?.createdAt
+                        ? new Date(
+                            selectedPrediction.createdAt
+                          ).toLocaleString()
+                        : "N/A"}
                     </p>
-                    
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-600">
@@ -1176,68 +1230,106 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
       <Dialog open={analysisModalOpen} onOpenChange={setAnalysisModalOpen}>
-        <DialogContent className="flex flex-col items-center justify-center space-y-6">
-          <DialogTitle className="text-lg font-bold text-orange-500">
+        <DialogContent className="flex flex-col items-center justify-center sm:max-w-[1200px] max-h-[90vh] overflow-y-auto p-8">
+          <DialogTitle className="text-2xl font-bold text-orange-500 mb-6">
             {t("top_3_analysis")}
           </DialogTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+            {/* Chart Card */}
+            <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                {`Chart for the garden`}
+              </h3>
+              <div className="w-full h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={aggregatedData}>
+                    <XAxis dataKey="name" tickFormatter={formatLabel} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                      {aggregatedData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            index === 0
+                              ? "red"
+                              : index === 1
+                              ? "green"
+                              : index === 2
+                              ? "yellow"
+                              : "rgb(59, 130, 246)"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
 
-          <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={aggregatedData}>
-                <XAxis dataKey="name" tickFormatter={formatLabel} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {aggregatedData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        index === 0
-                          ? "red"
-                          : index === 1
-                          ? "green"
-                          : index === 2
-                          ? "yellow"
-                          : "rgb(59, 130, 246)"
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+              {/* Legends */}
+              <div className="flex flex-col mt-6 space-y-3">
+                {aggregatedData.map((entry, index) => {
+                  const total = aggregatedData.reduce(
+                    (sum, item) => sum + item.value,
+                    0
+                  );
+                  const percentage = ((entry.value / total) * 100).toFixed(1);
 
-          {/* LEGENDS */}
-          <div className="flex flex-col w-full px-6 space-y-2">
-            {aggregatedData.map((entry, index) => {
-              const total = aggregatedData.reduce(
-                (sum, item) => sum + item.value,
-                0
-              );
-              const percentage = ((entry.value / total) * 100).toFixed(1);
+                  const color =
+                    index === 0
+                      ? "red"
+                      : index === 1
+                      ? "green"
+                      : index === 2
+                      ? "yellow"
+                      : "gray";
 
-              const color =
-                index === 0
-                  ? "red"
-                  : index === 1
-                  ? "green"
-                  : index === 2
-                  ? "yellow"
-                  : "gray";
+                  return (
+                    <div key={entry.name} className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: color }}
+                      ></div>
+                      <div className="flex justify-between w-full text-sm">
+                        <span className="font-medium">{entry.name}</span>
+                        <span className="text-gray-500">{percentage}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-              return (
-                <div key={entry.name} className="flex items-center gap-4">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: color }}
-                  ></div>
-                  <div className="flex justify-between w-full text-sm">
-                    <span className="font-medium">{entry.name}</span>
-                    <span className="text-gray-500">{percentage}%</span>
-                  </div>
-                </div>
-              );
-            })}
+            {/* Solutions Card */}
+            <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                {t("suggested_solutions")}
+              </h3>
+              <div className="space-y-6 overflow-y-auto">
+                {aggregatedData.map((entry) => {
+                  const classInfo = getClassInfo(entry.name);
+                  return (
+                    <div key={entry.name} className="space-y-2">
+                      <h4 className="font-medium text-md text-gray-700">
+                        {entry.name}:
+                      </h4>
+                      {classInfo?.solutions &&
+                      classInfo.solutions.length > 0 ? (
+                        <ul className="list-disc list-inside text-gray-600 ml-4">
+                          {classInfo.solutions.map((solution, index) => (
+                            <li key={index}>{solution}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-500">
+                          {t("no_solutions_available")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

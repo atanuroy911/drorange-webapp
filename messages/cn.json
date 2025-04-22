@@ -61,6 +61,9 @@
     "submission_details": "提交详情",
     "not_available": "不可用",
     "submission_time": "提交时间",
-    "reported_by": "报告人"
+    "reported_by": "报告人",
+    "tree_id": "树的ID",
+    "no_solutions_available": "暂无解决方案。"
+
   }
 }
